@@ -24,12 +24,15 @@ namespace Pythia8 {
 //**************************************************************************
 
 // This class holds info on a parton resolved inside the incoming beam,
-// i.e. either an initiator (part a hard scattering or multiple interaction)
+// i.e. either an initiator (part of a hard or a multiple interaction)
 // or a remnant (part of the beam remnant treatment).
 
 // The companion code is -1 from onset and for g, is -2 for an unmatched 
 // sea quark, is >= 0 for a matched sea quark, with the number giving the 
 // companion position, and is -3 for a valence quark.
+
+// Rescattering partons properly do not belong here, but bookkeeping is
+// simpler with them, so they are stored with companion code -10.
 
 class ResolvedParton {
 
@@ -61,24 +64,25 @@ public:
     {colRes = colIn; acolRes = acolIn;}  
 
   // Get info on initiator or remnant parton.
-  int iPos() const {return iPosRes;} 
-  int id() const {return idRes;} 
-  double x() const {return xRes;} 
-  int companion() const {return companionRes;} 
-  bool isValence() const {return (companionRes == -3);}
-  bool isUnmatched() const {return (companionRes == -2);}
-  bool isCompanion() const {return (companionRes >= 0);}
+  int iPos()           const {return iPosRes;} 
+  int id()             const {return idRes;} 
+  double x()           const {return xRes;} 
+  int companion()      const {return companionRes;} 
+  bool isValence()     const {return (companionRes == -3);}
+  bool isUnmatched()   const {return (companionRes == -2);}
+  bool isCompanion()   const {return (companionRes >= 0);}
+  bool isFromBeam()    const {return (companionRes > -10);}
   double xqCompanion() const {return xqCompRes;} 
-  Vec4 p() const {return pRes;}
-  double px() const {return pRes.px();}
-  double py() const {return pRes.py();}
-  double pz() const {return pRes.pz();}
-  double e() const {return pRes.e();}
-  double m() const {return mRes;}
-  double pT() const {return pRes.pT();}
-  double mT2() const {return mRes*mRes + pRes.pT2();}
-  int col() const {return colRes;}
-  int acol() const {return acolRes;}
+  Vec4 p()             const {return pRes;}
+  double px()          const {return pRes.px();}
+  double py()          const {return pRes.py();}
+  double pz()          const {return pRes.pz();}
+  double e()           const {return pRes.e();}
+  double m()           const {return mRes;}
+  double pT()          const {return pRes.pT();}
+  double mT2()         const {return mRes*mRes + pRes.pT2();}
+  int col()            const {return colRes;}
+  int acol()           const {return acolRes;}
  
 private:
 
@@ -135,28 +139,28 @@ public:
   double xMax(int iSkip = -1);
 
   // Special hard-process parton distributions (can agree with standard ones).
-  double xfHard(int id, double x, double Q2) 
-    {return pdfHardBeamPtr->xf(id, x, Q2);}
+  double xfHard(int idIn, double x, double Q2) 
+    {return pdfHardBeamPtr->xf(idIn, x, Q2);}
    
   // Standard parton distributions.
-  double xf(int id, double x, double Q2) 
-    {return pdfBeamPtr->xf(id, x, Q2);}
+  double xf(int idIn, double x, double Q2) 
+    {return pdfBeamPtr->xf(idIn, x, Q2);}
 
   // Ditto, split into valence and sea parts (where gluon counts as sea).
-  double xfVal(int id, double x, double Q2) 
-    {return pdfBeamPtr->xfVal(id, x, Q2);}
-  double xfSea(int id, double x, double Q2) 
-    {return pdfBeamPtr->xfSea(id, x, Q2);}
+  double xfVal(int idIn, double x, double Q2) 
+    {return pdfBeamPtr->xfVal(idIn, x, Q2);}
+  double xfSea(int idIn, double x, double Q2) 
+    {return pdfBeamPtr->xfSea(idIn, x, Q2);}
 
   // Rescaled parton distributions, as needed for MI and ISR.
   // For ISR also allow split valence/sea, and only return relevant part.
-  double xfMI(int id, double x, double Q2) 
-    {return xfModified(-1, id, x, Q2);}
-  double xfISR(int indexMI, int id, double x, double Q2) 
-    {return xfModified( indexMI, id, x, Q2);}
+  double xfMI(int idIn, double x, double Q2) 
+    {return xfModified(-1, idIn, x, Q2);}
+  double xfISR(int indexMI, int idIn, double x, double Q2) 
+    {return xfModified( indexMI, idIn, x, Q2);}
 
   // Decide whether chosen quark is valence, sea or companion.
-  void pickValSeaComp();
+  int pickValSeaComp();
 
   // Initialize kind of incoming beam particle.
   void initBeamKind();
@@ -172,8 +176,8 @@ public:
   void clear() {resolved.resize(0);}
 
   // Add a resolved parton to list. 
-  int append( int iPos, int id, double x, int companion = -1)
-    {resolved.push_back( ResolvedParton( iPos, id, x, companion) );
+  int append( int iPos, int idIn, double x, int companion = -1)
+    {resolved.push_back( ResolvedParton( iPos, idIn, x, companion) );
     return resolved.size() - 1;}
 
   // Print extracted parton list; for debug mainly.
@@ -181,8 +185,8 @@ public:
 
   // How many different flavours, and how many quarks of given flavour.
   int nValenceKinds() const {return nValKinds;}
-  int nValence(int id) const {for (int i = 0; i < nValKinds; ++i) 
-    if (id == idVal[i]) return nVal[i]; return 0;}
+  int nValence(int idIn) const {for (int i = 0; i < nValKinds; ++i) 
+    if (idIn == idVal[i]) return nVal[i]; return 0;}
 
   // Test whether a lepton is to be considered as unresolved.
   bool isUnresolvedLepton();
@@ -259,7 +263,7 @@ private:
   int    junCol[3];
 
   // Routine to calculate pdf's given previous interactions.
-  double xfModified( int iSkip, int id, double x, double Q2); 
+  double xfModified( int iSkip, int idIn, double x, double Q2); 
 
   // Fraction of hadron momentum sitting in a valence quark distribution.
   double xValFrac(int j, double Q2);

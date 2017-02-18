@@ -16,6 +16,7 @@
 #include "Info.h"
 #include "MultipleInteractions.h"
 #include "ParticleData.h"
+#include "PartonSystems.h"
 #include "PythiaStdlib.h"
 #include "Settings.h"
 #include "SigmaTotal.h"
@@ -39,9 +40,10 @@ public:
  
   // Initialization of all classes at the parton level.
   bool init( Info* infoPtrIn, BeamParticle* beamAPtrIn, 
-    BeamParticle* beamBPtrIn, SigmaTotal* sigmaTotPtr, 
-    TimeShower* timesDecPtrIn, TimeShower* timesPtrIn, 
-    SpaceShower* spacePtrIn, UserHooks* userHooksPtrIn);
+    BeamParticle* beamBPtrIn, PartonSystems* partonSystemsPtrIn,
+    SigmaTotal* sigmaTotPtr, TimeShower* timesDecPtrIn, 
+    TimeShower* timesPtrIn, SpaceShower* spacePtrIn, 
+    UserHooks* userHooksPtrIn);
  
   // Generate the next parton-level process.
   bool next( Event& process, Event& event); 
@@ -50,7 +52,7 @@ public:
   bool hasVetoed() const {return doVeto;}
 
   // Accumulate and print statistics.
-  void accumulate() {multi.accumulate( infoPtr);}
+  void accumulate() {multi.accumulate();}
   void statistics(bool reset = false) {if (doMI) multi.statistics(reset);}
 
 private: 
@@ -75,6 +77,9 @@ private:
   // Pointers to the two incoming beams.
   BeamParticle* beamAPtr;
   BeamParticle* beamBPtr;
+
+  // Pointer to information on subcollision parton locations.
+  PartonSystems* partonSystemsPtr;
 
   // Pointer to userHooks object for user interaction with program.
   UserHooks* userHooksPtr;

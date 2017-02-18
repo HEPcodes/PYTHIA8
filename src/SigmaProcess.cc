@@ -112,41 +112,41 @@ bool SigmaProcess::initFlux() {
   // Case with q g incoming state.
   else if (fluxType == "qg") {
     for (int i = -nQuarkIn; i <= nQuarkIn; ++i) {
-      int id = (i == 0) ? 21 : i;
-      addBeamA(id);
-      addBeamB(id);
+      int idNow = (i == 0) ? 21 : i;
+      addBeamA(idNow);
+      addBeamB(idNow);
     }
-    for (int id = -nQuarkIn; id <= nQuarkIn; ++id) 
-    if (id != 0) {
-      addPair(id, 21);
-      addPair(21, id);
+    for (int idNow = -nQuarkIn; idNow <= nQuarkIn; ++idNow) 
+    if (idNow != 0) {
+      addPair(idNow, 21);
+      addPair(21, idNow);
     }
   }
 
   // Case with q q', q qbar' or qbar qbar' incoming state.
   else if (fluxType == "qq") {
-    for (int id = -nQuarkIn; id <= nQuarkIn; ++id) 
-    if (id != 0) {
-      addBeamA(id);
-      addBeamB(id);
+    for (int idNow = -nQuarkIn; idNow <= nQuarkIn; ++idNow) 
+    if (idNow != 0) {
+      addBeamA(idNow);
+      addBeamB(idNow);
     }
-    for (int id1 = -nQuarkIn; id1 <= nQuarkIn; ++id1) 
-    if (id1 != 0) 
-    for (int id2 = -nQuarkIn; id2 <= nQuarkIn; ++id2) 
-    if (id2 != 0) 
-      addPair(id1, id2);
+    for (int id1Now = -nQuarkIn; id1Now <= nQuarkIn; ++id1Now) 
+    if (id1Now != 0) 
+    for (int id2Now = -nQuarkIn; id2Now <= nQuarkIn; ++id2Now) 
+    if (id2Now != 0) 
+      addPair(id1Now, id2Now);
   }
 
   // Case with q qbar incoming state.
   else if (fluxType == "qqbarSame") {
-    for (int id = -nQuarkIn; id <= nQuarkIn; ++id) 
-    if (id != 0) {
-      addBeamA(id);
-      addBeamB(id);
+    for (int idNow = -nQuarkIn; idNow <= nQuarkIn; ++idNow) 
+    if (idNow != 0) {
+      addBeamA(idNow);
+      addBeamB(idNow);
     }
-    for (int id = -nQuarkIn; id <= nQuarkIn; ++id) 
-    if (id != 0) 
-      addPair(id, -id);
+    for (int idNow = -nQuarkIn; idNow <= nQuarkIn; ++idNow) 
+    if (idNow != 0) 
+      addPair(idNow, -idNow);
   }
 
   // Case with f f', f fbar', fbar fbar' incoming state.
@@ -159,31 +159,31 @@ bool SigmaProcess::initFlux() {
     // First beam is lepton and second is hadron.
     } else if ( isLeptonA ) {
       addBeamA(idA);
-      for (int id = -nQuarkIn; id <= nQuarkIn; ++id) 
-      if (id != 0) {
-        addBeamB(id);
-        addPair(idA, id);
+      for (int idNow = -nQuarkIn; idNow <= nQuarkIn; ++idNow) 
+      if (idNow != 0) {
+        addBeamB(idNow);
+        addPair(idA, idNow);
       }
     // First beam is hadron and second is lepton.
     } else if ( isLeptonB ) {
       addBeamB(idB);
-      for (int id = -nQuarkIn; id <= nQuarkIn; ++id) 
-      if (id != 0) {
-        addBeamA(id);
-        addPair(id, idB);
+      for (int idNow = -nQuarkIn; idNow <= nQuarkIn; ++idNow) 
+      if (idNow != 0) {
+        addBeamA(idNow);
+        addPair(idNow, idB);
       }
     // Hadron beams gives quarks.
     } else {
-      for (int id = -nQuarkIn; id <= nQuarkIn; ++id) 
-      if (id != 0) {
-        addBeamA(id);
-        addBeamB(id);
+      for (int idNow = -nQuarkIn; idNow <= nQuarkIn; ++idNow) 
+      if (idNow != 0) {
+        addBeamA(idNow);
+        addBeamB(idNow);
       }
-      for (int id1 = -nQuarkIn; id1 <= nQuarkIn; ++id1) 
-      if (id1 != 0) 
-      for (int id2 = -nQuarkIn; id2 <= nQuarkIn; ++id2) 
-      if (id2 != 0) 
-        addPair(id1, id2);
+      for (int id1Now = -nQuarkIn; id1Now <= nQuarkIn; ++id1Now) 
+      if (id1Now != 0) 
+      for (int id2Now = -nQuarkIn; id2Now <= nQuarkIn; ++id2Now) 
+      if (id2Now != 0) 
+        addPair(id1Now, id2Now);
     }
   }
 
@@ -196,14 +196,14 @@ bool SigmaProcess::initFlux() {
       addPair(idA, idB);
     // Else assume both to be hadrons, for better or worse.
     } else {
-      for (int id = -nQuarkIn; id <= nQuarkIn; ++id) 
-      if (id != 0) {
-        addBeamA(id);
-        addBeamB(id);
+      for (int idNow = -nQuarkIn; idNow <= nQuarkIn; ++idNow) 
+      if (idNow != 0) {
+        addBeamA(idNow);
+        addBeamB(idNow);
       }
-      for (int id = -nQuarkIn; id <= nQuarkIn; ++id) 
-      if (id != 0) 
-        addPair(id, -id);
+      for (int idNow = -nQuarkIn; idNow <= nQuarkIn; ++idNow) 
+      if (idNow != 0) 
+        addPair(idNow, -idNow);
     }
   }
 
@@ -217,16 +217,16 @@ bool SigmaProcess::initFlux() {
       addPair(idA, idB);
     // Hadron beams gives quarks.
     } else {
-      for (int id = -nQuarkIn; id <= nQuarkIn; ++id) 
-      if (id != 0) {
-        addBeamA(id);
-        addBeamB(id);
+      for (int idNow = -nQuarkIn; idNow <= nQuarkIn; ++idNow) 
+      if (idNow != 0) {
+        addBeamA(idNow);
+        addBeamB(idNow);
       }
-      for (int id1 = -nQuarkIn; id1 <= nQuarkIn; ++id1) 
-      if (id1 != 0) 
-      for (int id2 = -nQuarkIn; id2 <= nQuarkIn; ++id2) 
-      if (id2 != 0 && id1 * id2 < 0 && (abs(id1) + abs(id2))%2 == 1) 
-        addPair(id1, id2);
+      for (int id1Now = -nQuarkIn; id1Now <= nQuarkIn; ++id1Now) 
+      if (id1Now != 0) 
+      for (int id2Now = -nQuarkIn; id2Now <= nQuarkIn; ++id2Now) 
+      if (id2Now != 0 && id1Now * id2Now < 0 
+        && (abs(id1Now) + abs(id2Now))%2 == 1) addPair(id1Now, id2Now);
     }
   }
 
@@ -239,16 +239,16 @@ bool SigmaProcess::initFlux() {
       addPair(idA, idB);
     // Hadron beams gives quarks.
     } else {
-      for (int id = -nQuarkIn; id <= nQuarkIn; ++id) 
-      if (id != 0) {
-        addBeamA(id);
-        addBeamB(id);
+      for (int idNow = -nQuarkIn; idNow <= nQuarkIn; ++idNow) 
+      if (idNow != 0) {
+        addBeamA(idNow);
+        addBeamB(idNow);
       }
-      for (int id1 = -nQuarkIn; id1 <= nQuarkIn; ++id1) 
-      if (id1 != 0) 
-      for (int id2 = -nQuarkIn; id2 <= nQuarkIn; ++id2) 
-      if (id2 != 0 && id1 * id2 < 0) 
-        addPair(id1, id2);
+      for (int id1Now = -nQuarkIn; id1Now <= nQuarkIn; ++id1Now) 
+      if (id1Now != 0) 
+      for (int id2Now = -nQuarkIn; id2Now <= nQuarkIn; ++id2Now) 
+      if (id2Now != 0 && id1Now * id2Now < 0) 
+        addPair(id1Now, id2Now);
     }
   }
 
@@ -259,10 +259,10 @@ bool SigmaProcess::initFlux() {
       addBeamA(idA);
       addPair(idA, 22);
     } else {  
-      for (int id = -nQuarkIn; id <= nQuarkIn; ++id) 
-      if (id != 0) {
-        addBeamA(id);
-        addPair(id, 22);
+      for (int idNow = -nQuarkIn; idNow <= nQuarkIn; ++idNow) 
+      if (idNow != 0) {
+        addBeamA(idNow);
+        addPair(idNow, 22);
       }
     }
     // Fermion from incoming side B.
@@ -270,10 +270,10 @@ bool SigmaProcess::initFlux() {
       addBeamB( idB);
       addPair(22, idB);
     } else {  
-      for (int id = -nQuarkIn; id <= nQuarkIn; ++id) 
-      if (id != 0) {
-        addBeamB(id);
-        addPair(22, id);
+      for (int idNow = -nQuarkIn; idNow <= nQuarkIn; ++idNow) 
+      if (idNow != 0) {
+        addBeamB(idNow);
+        addPair(22, idNow);
       }
     }
     // Photons in the beams.
@@ -387,28 +387,28 @@ double SigmaProcess::weightTopDecay( Event& process, int iResBeg,
 
   // If not pair W d/s/b and mother t then return unit weight.
   if (iResEnd - iResBeg != 1) return 1.;
-  int iW = iResBeg;
-  int iB = iResBeg + 1;
-  int idW = process[iW].idAbs();
-  int idB = process[iB].idAbs();
-  if (idW != 24) {
-    swap(iW, iB); 
-    swap(idW, idB);
+  int iW1  = iResBeg;
+  int iB2  = iResBeg + 1;
+  int idW1 = process[iW1].idAbs();
+  int idB2 = process[iB2].idAbs();
+  if (idW1 != 24) {
+    swap(iW1, iB2); 
+    swap(idW1, idB2);
   } 
-  if (idW != 24 || (idB != 1 && idB != 3 && idB != 5)) return 1.;
-  int iT = process[iW].mother1(); 
+  if (idW1 != 24 || (idB2 != 1 && idB2 != 3 && idB2 != 5)) return 1.;
+  int iT   = process[iW1].mother1(); 
   if (iT <= 0 || process[iT].idAbs() != 6) return 1.;
 
   // Find sign-matched order of W decay products. 
-  int iF    = process[iW].daughter1(); 
-  int iFbar = process[iW].daughter2();
+  int iF    = process[iW1].daughter1(); 
+  int iFbar = process[iW1].daughter2();
   if (iFbar - iF != 1) return 1.; 
   if (process[iT].id() * process[iF].id() < 0) swap(iF, iFbar);
 
   // Weight and maximum weight.
   double wt    = (process[iT].p() * process[iFbar].p()) 
-               * (process[iF].p() * process[iB].p());
-  double wtMax = ( pow4(process[iT].m()) - pow4(process[iW].m()) ) / 8.;  
+               * (process[iF].p() * process[iB2].p());
+  double wtMax = ( pow4(process[iT].m()) - pow4(process[iW1].m()) ) / 8.;  
 
   // Done.
   return wt / wtMax;
@@ -750,9 +750,10 @@ void Sigma2Process::store2KinMI( double x1in, double x2in,
 
 //*********
 
-// Perform kinematics for a Multiple Interaction.
+// Perform kinematics for a Multiple Interaction, including a rescattering.
 
-bool Sigma2Process::final2KinMI() {
+bool Sigma2Process::final2KinMI( int i1Res, int i2Res, Vec4 p1Res, Vec4 p2Res,
+  double m1Res, double m2Res) {
 
   // Have to set flavours and colours.
   setIdColAcol();
@@ -765,30 +766,52 @@ bool Sigma2Process::final2KinMI() {
   s3           = m3 * m3;
   s4           = m4 * m4;
 
+  // Do kinematics of the production; without or with masses.  
+  double e1In  = 0.5 * mH;
+  double e2In  = e1In;
+  double pzIn  = e1In;
+  if (i1Res > 0 || i2Res > 0) {
+    double s1  = m1Res * m1Res;
+    double s2  = m2Res * m2Res;
+    e1In       = 0.5 * (sH + s1 - s2) / mH;
+    e2In       = 0.5 * (sH + s2 - s1) / mH;
+    pzIn       = sqrtpos( e1In*e1In - s1 );
+  }
+
   // Do kinematics of the decay.
-  double eIn   = 0.5 * mH;
   double e3    = 0.5 * (sH + s3 - s4) / mH;
   double e4    = 0.5 * (sH + s4 - s3) / mH;
   double pAbs  = sqrtpos( e3*e3 - s3 );
   phi          = 2. * M_PI * Rndm::flat();
   double pZ    = pAbs * cosTheta;
-  double pX    = pAbs * sinTheta * sin(phi);
-  double pY    = pAbs * sinTheta * cos(phi);
-  double scale = eIn * sinTheta;
+  pTFin        = pAbs * sinTheta;
+  double pX    = pTFin * sin(phi);
+  double pY    = pTFin * cos(phi);
+  double scale = 0.5 * mH * sinTheta;
 
   // Fill particle info.
-  parton[1] = Particle( idSave[1], -31, 0, 0, 3, 4, colSave[1], acolSave[1],
-    0., 0., eIn, eIn, 0., scale);
-  parton[2] = Particle( idSave[2], -31, 0, 0, 3, 4, colSave[2], acolSave[2],
-    0., 0., -eIn, eIn, 0., scale);
-  parton[3] = Particle( idSave[3],  33, 1, 2, 0, 0, colSave[3], acolSave[3],
-    pX, pY, pZ, e3, m3, scale);
-  parton[4] = Particle( idSave[4],  33, 1, 2, 0, 0, colSave[4], acolSave[4],
-    -pX, -pY, -pZ, e4, m4, scale);
+  int status1  = (i1Res == 0) ? -31 : -34; 
+  int status2  = (i2Res == 0) ? -31 : -34; 
+  parton[1]    = Particle( idSave[1], status1, 0, 0, 3, 4, 
+    colSave[1], acolSave[1],  0.,  0.,  pzIn, e1In, m1Res, scale);
+  parton[2]    = Particle( idSave[2], status2, 0, 0, 3, 4, 
+    colSave[2], acolSave[2],  0.,  0., -pzIn, e2In, m2Res, scale);
+  parton[3]    = Particle( idSave[3],      33, 1, 2, 0, 0, 
+    colSave[3], acolSave[3],  pX,  pY,    pZ,   e3,    m3, scale);
+  parton[4]    = Particle( idSave[4],      33, 1, 2, 0, 0, 
+    colSave[4], acolSave[4], -pX, -pY,   -pZ,   e4,    m4, scale);
 
   // Boost particles from subprocess rest frame to event rest frame.
-  double betaZ = (x1Save - x2Save) / (x1Save + x2Save);
-  for (int i = 1; i <= 4; ++i) parton[i].bst(0., 0., betaZ);
+  // Normal multiple interaction: only longitudinal boost.
+  if (i1Res == 0 && i2Res == 0) {
+    double betaZ = (x1Save - x2Save) / (x1Save + x2Save);
+    for (int i = 1; i <= 4; ++i) parton[i].bst(0., 0., betaZ);
+  // Rescattering: generic rotation and boost required. 
+  } else {
+    RotBstMatrix M;
+    M.fromCMframe( p1Res, p2Res);
+    for (int i = 1; i <= 4; ++i) parton[i].rotbst(M);
+  }
 
   // Done.
   return true;

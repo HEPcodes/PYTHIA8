@@ -26,14 +26,16 @@ const int PartonLevel::NTRY = 10;
 // Main routine to initialize the parton-level generation process.
 
 bool PartonLevel::init( Info* infoPtrIn, BeamParticle* beamAPtrIn, 
-  BeamParticle* beamBPtrIn,  SigmaTotal* sigmaTotPtr, 
-  TimeShower* timesDecPtrIn, TimeShower* timesPtrIn, 
-  SpaceShower* spacePtrIn, UserHooks* userHooksPtrIn) {
+  BeamParticle* beamBPtrIn, PartonSystems* partonSystemsPtrIn, 
+  SigmaTotal* sigmaTotPtr, TimeShower* timesDecPtrIn, 
+  TimeShower* timesPtrIn, SpaceShower* spacePtrIn, 
+  UserHooks* userHooksPtrIn) {
 
   // Store input pointers and modes for future use. 
   infoPtr            = infoPtrIn;
   beamAPtr           = beamAPtrIn;
   beamBPtr           = beamBPtrIn;
+  partonSystemsPtr   = partonSystemsPtrIn;
   timesDecPtr        = timesDecPtrIn;
   timesPtr           = timesPtrIn;
   spacePtr           = spacePtrIn;  
@@ -48,7 +50,7 @@ bool PartonLevel::init( Info* infoPtrIn, BeamParticle* beamAPtrIn,
   doFSRduringProcess = FSR && FSRinProcess &&  interleaveFSR;
   doFSRafterProcess  = FSR && FSRinProcess && !interleaveFSR;
   doFSRinResonances  = FSR && Settings::flag("PartonLevel:FSRinResonances");
-  doRemnants         = true;
+  doRemnants         = Settings::flag("PartonLevel:Remnants");
   doSecondHard       = Settings::flag("SecondHard:generate");
 
   // Need MI initialization for minbias processes, even if only first MI.
@@ -80,9 +82,9 @@ bool PartonLevel::init( Info* infoPtrIn, BeamParticle* beamAPtrIn,
   // Set info and initialize the respective program elements.
   timesPtr->init( beamAPtr, beamBPtr);
   if (doISR) spacePtr->init( beamAPtr, beamBPtr);
-  if (doMIinit && !multi.init( infoPtr, beamAPtr, beamBPtr, sigmaTotPtr)) 
-    doMI = false;
-  remnants.init( infoPtr, beamAPtr, beamBPtr);  
+  doMI = multi.init( doMIinit, infoPtr, beamAPtr, beamBPtr, 
+    partonSystemsPtr, sigmaTotPtr);
+  remnants.init( infoPtr, beamAPtr, beamBPtr, partonSystemsPtr);  
 
   // Succeeded. (Check return values from other classes??)
   return true;
@@ -101,7 +103,7 @@ bool PartonLevel::next( Event& process, Event& event) {
   if (doMIinit) multi.clear();
   if (infoPtr->isMinBias()) {
     multi.pTfirst();
-    multi.setupFirstSys( infoPtr, process);
+    multi.setupFirstSys( process);
   }
 
   // Allow up to ten tries; failure possible for beam remnants.
@@ -169,7 +171,7 @@ bool PartonLevel::next( Event& process, Event& event) {
         ? timesPtr->pTnext( event, pTmaxFSR, pTgen) : -1.;
       pTgen = max( pTgen, pTtimes);
       double pTmulti = (doMI) 
-        ? multi.pTnext( pTmaxMI, pTgen) : -1.;
+        ? multi.pTnext( pTmaxMI, pTgen, event) : -1.;
       pTgen = max( pTgen, pTmulti);
       double pTspace = (doISR) 
         ? spacePtr->pTnext( event, pTmaxISR, pTgen, nRad) : -1.;
@@ -185,7 +187,7 @@ bool PartonLevel::next( Event& process, Event& event) {
 
       // Do a multiple interaction (if allowed).
       if (pTmulti > 0. && pTmulti > pTspace && pTmulti > pTtimes) {
-        multi.scatter( infoPtr, event);  
+        multi.scatter( event);  
         typeLatest = 1;
         ++nMI;
         if (doISR)              spacePtr->prepare( nMI - 1, event);
@@ -241,67 +243,10 @@ bool PartonLevel::next( Event& process, Event& event) {
         if (doVeto) return false;
       }
 
-    // Keep on evolving until nothing is left to be done.
+      // Keep on evolving until nothing is left to be done.
+      infoPtr->setPartEvolved( nMI, nISR);
     } while (pTmax > 0.); 
 
-    // Do all final-state emissions if not already considered above.
-    if (doFSRafterProcess) {
-
-      // Find largest scale for final partons.
-      pTmax = 0.;
-      for (int i = 0; i < event.size(); ++i) 
-        if (event[i].isFinal() && event[i].scale() > pTmax)
-          pTmax = event[i].scale();     
-      pTsaveFSR = pTmax;
-
-      // Prepare all subsystems for evolution.
-      for (int iSys = 0; iSys < event.sizeSystems(); ++iSys)
-        timesPtr->prepare( iSys, event);
-
-      // Set up initial veto scale.
-      doVeto = false;
-      pTveto = pTvetoPT;
-
-      // Begin evolution down in pT from hard pT scale. 
-      do {
-        typeVetoStep = 0;
-        double pTtimes = timesPtr->pTnext( event, pTmax, 0.);
-
-        // Allow a user veto. Only do it once, so remember to change pTveto.
-        if (pTveto > 0. && pTveto > pTtimes) {
-          pTveto = -1.; 
-          doVeto = userHooksPtr->doVetoPT( 4, event);
-          // Abort event if vetoed.
-          if (doVeto) return false;
-        }
-
-        // Do a final-state emission (if allowed).
-        if (pTtimes > 0.) {
-          if (timesPtr->branch( event)) {
-            iSysNow = timesPtr->system();
-            ++nFSRinProc; 
-            if (iSysNow == 0) ++nFSRhard;
-            if (canVetoStep && iSysNow == 0 && nFSRhard <= nVetoStep)
-              typeVetoStep = 4;
-	  }
-          pTmax = pTtimes;
-        }
-    
-        // If no pT scales above zero then nothing to be done.
-        else pTmax = 0.;
-
-        // Optionally check for a veto after the first few emissions.
-        if (typeVetoStep > 0) {
-          doVeto = userHooksPtr->doVetoStep( typeVetoStep, nISRhard, 
-            nFSRhard, event);
-          // Abort event if vetoed.
-          if (doVeto) return false;
-        }
-
-      // Keep on evolving until nothing is left to be done.
-      } while (pTmax > 0.); 
-    }
-    
     // Add beam remnants, including primordial kT kick and colour tracing.
     if (doRemnants && !remnants.add( event)) physical = false;
  
@@ -310,10 +255,69 @@ bool PartonLevel::next( Event& process, Event& event) {
     event.clear();
     beamAPtr->clear();
     beamBPtr->clear();
+    partonSystemsPtr->clear();
 
   // End loop over ten tries. Hopefully it worked
   }
   if (!physical) return false;
+
+  // Do all final-state emissions if not already considered above.
+  if (doFSRafterProcess) {
+
+    // Find largest scale for final partons.
+    double pTmax = 0.;
+    for (int i = 0; i < event.size(); ++i) 
+      if (event[i].isFinal() && event[i].scale() > pTmax)
+        pTmax = event[i].scale();     
+    pTsaveFSR = pTmax;
+
+    // Prepare all subsystems for evolution.
+    for (int iSys = 0; iSys < partonSystemsPtr->sizeSys(); ++iSys)
+      timesPtr->prepare( iSys, event);
+
+    // Set up initial veto scale.
+    doVeto        = false;
+    double pTveto = pTvetoPT;
+
+    // Begin evolution down in pT from hard pT scale. 
+    do {
+      typeVetoStep = 0;
+      double pTtimes = timesPtr->pTnext( event, pTmax, 0.);
+
+      // Allow a user veto. Only do it once, so remember to change pTveto.
+      if (pTveto > 0. && pTveto > pTtimes) {
+        pTveto = -1.; 
+        doVeto = userHooksPtr->doVetoPT( 4, event);
+        // Abort event if vetoed.
+        if (doVeto) return false;
+      }
+
+      // Do a final-state emission (if allowed).
+      if (pTtimes > 0.) {
+        if (timesPtr->branch( event)) {
+          iSysNow = timesPtr->system();
+          ++nFSRinProc; 
+          if (iSysNow == 0) ++nFSRhard;
+          if (canVetoStep && iSysNow == 0 && nFSRhard <= nVetoStep)
+            typeVetoStep = 4;
+        }
+        pTmax = pTtimes;
+      }
+    
+      // If no pT scales above zero then nothing to be done.
+      else pTmax = 0.;
+
+      // Optionally check for a veto after the first few emissions.
+      if (typeVetoStep > 0) {
+        doVeto = userHooksPtr->doVetoStep( typeVetoStep, nISRhard, 
+          nFSRhard, event);
+        // Abort event if vetoed.
+        if (doVeto) return false;
+      }
+
+    // Keep on evolving until nothing is left to be done.
+    } while (pTmax > 0.); 
+  }
 
   // Perform showers in resonance decay chains.
   nFSRinRes = resonanceShowers( process, event); 
@@ -362,12 +366,15 @@ void PartonLevel::setupHardSys( Event& process, Event& event) {
   double x2 = process[inM].pMinus() / process[0].e();
   beamBPtr->append( inM, process[inM].id(), x2);
 
-  // Scale. Find whether incoming partons are valence or sea.
+  // Scale. Find whether incoming partons are valence or sea. Store.
   double scale = process.scale();
   beamAPtr->xfISR( 0, process[inP].id(), x1, scale*scale);
-  beamAPtr->pickValSeaComp(); 
+  int vsc1 = beamAPtr->pickValSeaComp(); 
   beamBPtr->xfISR( 0, process[inM].id(), x2, scale*scale);
-  beamBPtr->pickValSeaComp(); 
+  int vsc2 = beamBPtr->pickValSeaComp();
+  bool isVal1 = (vsc1 == -3); 
+  bool isVal2 = (vsc2 == -3); 
+  infoPtr->setValence( isVal1, isVal2);
 
   // Initialize info needed for subsequent sequential decays + showers.
   nHardDone = 0;
@@ -390,8 +397,13 @@ void PartonLevel::setupHardSys( Event& process, Event& event) {
   }
 
   // Store participating partons as first set in list of all systems.
-  event.newSystem();
-  for (int i = inP; i < nHardDone; ++i) event.addToSystem(0, i);   
+  partonSystemsPtr->addSys();
+  partonSystemsPtr->setInA(0, inP);
+  partonSystemsPtr->setInB(0, inM);
+  for (int i = inM + 1; i < nHardDone; ++i) 
+    partonSystemsPtr->addOut(0, i);   
+  partonSystemsPtr->setSHat( 0, 
+    (event[inP].p() + event[inM].p()).m2Calc() );
 
   // Identify second hard process where applicable.
   // Since internally generated incoming partons are guaranteed massless. 
@@ -431,8 +443,13 @@ void PartonLevel::setupHardSys( Event& process, Event& event) {
     }
 
     // Store participating partons as second set in list of all systems.
-    event.newSystem();
-    for (int i = inP2; i < nHardDone; ++i) event.addToSystem(1, i);   
+    partonSystemsPtr->addSys();
+    partonSystemsPtr->setInA(1, inP2);
+    partonSystemsPtr->setInB(1, inM2);
+    for (int i = inM2 + 1; i < nHardDone; ++i) 
+      partonSystemsPtr->addOut(1, i);   
+    partonSystemsPtr->setSHat( 1, 
+      (event[inP2].p() + event[inM2].p()).m2Calc() );
 
   // End code for second hard process.
   }
@@ -469,11 +486,11 @@ bool PartonLevel::setupUnresolvedSys( Event& process, Event& event) {
     BeamParticle* beamPtr = (i == 0) ? beamAPtr : beamBPtr;
 
     // Diffractive mass. Reconstruct boost and rotation to event cm frame.
-    double mDiff = process[iBeam].m();  
+    double mDiff  = process[iBeam].m();  
     double m2Diff = mDiff*mDiff;  
-    double beta = process[iBeam].pAbs() / process[iBeam].e();
-    double theta = process[iBeam].theta();
-    double phi = process[iBeam].phi();
+    double beta   = process[iBeam].pAbs() / process[iBeam].e();
+    double theta  = process[iBeam].theta();
+    double phi    = process[iBeam].phi();
   
     // Pick quark or gluon kicked out and flavour subdivision.
     bool gluonIsKicked = beamPtr->pickGluon(mDiff);
@@ -529,8 +546,8 @@ bool PartonLevel::setupUnresolvedSys( Event& process, Event& event) {
       // Provide relative pT kick in remnant. Construct (transverse) masses.
       pxSys = beamPtr->pxShare(); 
       pySys = beamPtr->pyShare(); 
-      mTS1 = m1*m1 + pxSys*pxSys + pySys*pySys;
-      mTS2 = m2*m2 + pxSys*pxSys + pySys*pySys;
+      mTS1  = m1*m1 + pxSys*pxSys + pySys*pySys;
+      mTS2  = m2*m2 + pxSys*pxSys + pySys*pySys;
       m2Sys = mTS1 / zSys + mTS2 / (1. - zSys);
 
       // Momentum of kicked-out massless gluon in diffractive rest frame.
@@ -583,25 +600,25 @@ bool PartonLevel::setupUnresolvedSys( Event& process, Event& event) {
 int PartonLevel::resonanceShowers( Event& process, Event& event) {
 
   // Isolate next system to be processed, if anything remains.
-  int nFSRinRes = 0;
+  int nFSRres = 0;
   while (nHardDone < process.size()) {
     int iBegin = nHardDone;
 
     // Mother in hard process and in complete event (after shower).
-    int iHardMother = process[iBegin].mother1();
+    int iHardMother      = process[iBegin].mother1();
     Particle& hardMother = process[iHardMother];
-    int iBefMother = iPosBefShow[iHardMother];
-    int iAftMother = event.iBotCopyId(iBefMother);
-    Particle& aftMother = event[iAftMother];
+    int iBefMother       = iPosBefShow[iHardMother];
+    int iAftMother       = event.iBotCopyId(iBefMother);
+    Particle& aftMother  = event[iAftMother];
 
     // From now mother counts as decayed.
     aftMother.statusNeg();
 
     // Mother can have been moved by showering (in any of previous steps), 
     // so prepare to update colour and momentum information for system.
-    int colBef = hardMother.col();
+    int colBef  = hardMother.col();
     int acolBef = hardMother.acol();
-    int colAft = aftMother.col();
+    int colAft  = aftMother.col();
     int acolAft = aftMother.acol();
     RotBstMatrix M;
     M.bst( hardMother.p(), aftMother.p());
@@ -620,8 +637,8 @@ int PartonLevel::resonanceShowers( Event& process, Event& event) {
       }
       
       // Update daughter and mother information.
-      if (i == iBegin) aftMother.daughter1( iNow);
-      else aftMother.daughter2( iNow); 
+      if (i == iBegin) event[iAftMother].daughter1( iNow);
+      else             event[iAftMother].daughter2( iNow); 
       now.mother1(iAftMother); 
 
       // Update colour and momentum information.
@@ -639,14 +656,13 @@ int PartonLevel::resonanceShowers( Event& process, Event& event) {
       double pTmax = 0.5 * hardMother.m();
       nFSRhard     = 0; 
 
-      // Add new system, with two empty beam slots.
-      int iSys = event.newSystem();
-      event.addToSystem( iSys, 0);
-      event.addToSystem( iSys, 0);
+      // Add new system, automatically with two empty beam slots.
+      int iSys = partonSystemsPtr->addSys();
+      partonSystemsPtr->setSHat(iSys, pow2(hardMother.m()) );
     
       // Loop over allowed range to find all final-state particles.
       for (int i = iPosBefShow[iBegin]; i <= iPosBefShow[iEnd]; ++i) 
-      if (event[i].isFinal()) event.addToSystem( iSys, i);
+      if (event[i].isFinal()) partonSystemsPtr->addOut( iSys, i);
 
       // Let prepare routine do the setup.    
       timesDecPtr->prepare( iSys, event);
@@ -671,7 +687,7 @@ int PartonLevel::resonanceShowers( Event& process, Event& event) {
         // Do a final-state emission (if allowed).
         if (pTtimes > 0.) {
           if (timesDecPtr->branch( event)) {
-            ++nFSRinRes; 
+            ++nFSRres; 
             ++nFSRhard;
             if (canVetoStep && nFSRhard <= nVetoStep) typeVetoStep = 5;
 	  }
@@ -696,7 +712,7 @@ int PartonLevel::resonanceShowers( Event& process, Event& event) {
 
   // No more systems to be processed. Return total number of emissions.
   }
-  return nFSRinRes;
+  return nFSRres;
 
 }
  

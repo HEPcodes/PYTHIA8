@@ -180,10 +180,10 @@ double BeamParticle::xMax(int iSkip) {
 // multiple interactions. By picking a non-negative iSkip value,
 // one particular interaction is skipped, as needed for ISR  
 
-double BeamParticle::xfModified(int iSkip, int id, double x, double Q2) {
+double BeamParticle::xfModified(int iSkip, int idIn, double x, double Q2) {
 
   // Initial values.
-  idSave    = id;
+  idSave    = idIn;
   iSkipSave = iSkip;
   xqVal     = 0.;
   xqgSea    = 0.;
@@ -193,9 +193,13 @@ double BeamParticle::xfModified(int iSkip, int id, double x, double Q2) {
   if (size() == 0) {
     if (x >= 1.) return 0.;
     bool canBeVal = false;
-    for (int i = 0; i < nValKinds; ++i) if (id == idVal[i]) canBeVal = true;
-    if (canBeVal) { xqVal = xfVal( id, x, Q2); xqgSea = xfSea( id, x, Q2); }
-    else xqgSea = xf( id, x, Q2);
+    for (int i = 0; i < nValKinds; ++i) 
+      if (idIn == idVal[i]) canBeVal = true;
+    if (canBeVal) { 
+      xqVal     = xfVal( idIn, x, Q2); 
+      xqgSea    = xfSea( idIn, x, Q2); 
+    }
+    else xqgSea = xf( idIn, x, Q2);
 
   // More complicated procedure for non-first interaction.
   } else { 
@@ -234,17 +238,18 @@ double BeamParticle::xfModified(int iSkip, int id, double x, double Q2) {
     // Calculate total rescaling factor and pdf for sea and gluon.
     double rescaleGS = max( 0., (1. - xValLeft - xCompAdded) 
       / (1. - xValTot) );
-    xqgSea = rescaleGS * xfSea( id, xRescaled, Q2); 
+    xqgSea = rescaleGS * xfSea( idIn, xRescaled, Q2); 
 
     // Find valence part and rescale it to remaining number of quarks. 
     for (int i = 0; i < nValKinds; ++i) 
-    if (id == idVal[i] && nValLeft[i] > 0) 
-      xqVal = xfVal( id, xRescaled, Q2) 
+    if (idIn == idVal[i] && nValLeft[i] > 0) 
+      xqVal = xfVal( idIn, xRescaled, Q2) 
       * double(nValLeft[i]) / double(nVal[i]); 
                                                                                
     // Find companion part, by adding all companion contributions.
     for (int i = 0; i < size(); ++i) 
-    if (i != iSkip && resolved[i].id() == -id && resolved[i].isUnmatched()) {
+    if (i != iSkip && resolved[i].id() == -idIn 
+      && resolved[i].isUnmatched()) {
       double xsRescaled = resolved[i].x() / (xLeft + resolved[i].x());
       double xcRescaled = x / (xLeft + resolved[i].x());  
       double xqCompNow = xCompDist( xcRescaled, xsRescaled); 
@@ -270,7 +275,7 @@ double BeamParticle::xfModified(int iSkip, int id, double x, double Q2) {
 // companion kind; in the latter case also pick its companion.
 // Assumes xfModified has already been called.
 
-  void BeamParticle::pickValSeaComp() {
+  int BeamParticle::pickValSeaComp() {
 
   // If parton already has a companion than reset code for this.
   int oldCompanion = resolved[iSkipSave].companion();
@@ -307,6 +312,9 @@ double BeamParticle::xfModified(int iSkip, int id, double x, double Q2) {
   // Bookkeep assignment; for sea--companion pair both ways.  
   resolved[iSkipSave].companion(vsc);
   if (vsc >= 0) resolved[vsc].companion(iSkipSave);
+  
+  // Done; return code for choice (to distinguish valence/sea in Info).
+  return vsc;
 
 } 
 
@@ -522,10 +530,11 @@ bool BeamParticle::remnantColours(Event& event, vector<int>& colFrom,
 
   // Find number and position of valence quarks, of gluons, and
   // of sea-companion pairs (counted as gluons) in the beam remnants.
-  // Skip gluons with same colour as anticolour.
+  // Skip gluons with same colour as anticolour and rescattering partons.
   vector<int> iVal;
   vector<int> iGlu;
-  for (int i = 0; i < size(); ++i) {
+  for (int i = 0; i < size(); ++i) 
+  if (resolved[i].isFromBeam()) {
     if ( resolved[i].isValence() ) iVal.push_back(i);
     else if ( resolved[i].isCompanion() && resolved[i].companion() > i ) 
       iGlu.push_back(i);
@@ -598,6 +607,7 @@ bool BeamParticle::remnantColours(Event& event, vector<int>& colFrom,
   vector<int> colList;
   vector<int> acolList;
   for (int i = 0; i < size(); ++i) 
+  if ( resolved[i].isFromBeam() )
   if ( resolved[i].col() != resolved[i].acol() ) {  
     if (resolved[i].col() > 0) colList.push_back( resolved[i].col() ); 
     if (resolved[i].acol() > 0) acolList.push_back( resolved[i].acol() ); 
@@ -610,9 +620,12 @@ bool BeamParticle::remnantColours(Event& event, vector<int>& colFrom,
     for (int iCol = 0; iCol < int(colList.size()); ++iCol) {
       for (int iAcol = 0; iAcol < int(acolList.size()); ++iAcol) {
 	if (acolList[iAcol] == colList[iCol]) { 
-          colList[iCol] = colList.back(); colList.pop_back();     
-          acolList[iAcol] = acolList.back(); acolList.pop_back();     
-          foundPair = true; break;
+          colList[iCol] = colList.back(); 
+          colList.pop_back();     
+          acolList[iAcol] = acolList.back(); 
+          acolList.pop_back();     
+          foundPair = true; 
+          break;
 	}
       } if (foundPair) break;
     }
@@ -622,7 +635,8 @@ bool BeamParticle::remnantColours(Event& event, vector<int>& colFrom,
   if (colList.size() == 1 && acolList.size() == 1) {
     int finalFrom = max( colList[0], acolList[0]);
     int finalTo   = min( colList[0], acolList[0]);
-    for (int i = 0; i < size(); ++i) {  
+    for (int i = 0; i < size(); ++i) 
+    if ( resolved[i].isFromBeam() ) {
       if (resolved[i].col()  == finalFrom) resolved[i].col(finalTo); 
       if (resolved[i].acol() == finalFrom) resolved[i].acol(finalTo); 
     }
@@ -680,8 +694,8 @@ double BeamParticle::xRemnant( int i) {
  
     // Loop over (up to) two quarks; add their contributions.
     for (int iId = 0; iId < 2; ++iId) {
-      int id = (iId == 0) ? id1 : id2;
-      if (id == 0) break;
+      int idNow = (iId == 0) ? id1 : id2;
+      if (idNow == 0) break;
       double xPart = 0.; 
 
       // Assume form (1-x)^a / sqrt(x).
@@ -690,7 +704,7 @@ double BeamParticle::xRemnant( int i) {
         if (nValKinds == 3 || nValKinds == 1) 
           xPow = (3. * Rndm::flat() < 2.) 
             ? valencePowerUinP : valencePowerDinP ; 
-        else if (nValence(id) == 2) xPow = valencePowerUinP;
+        else if (nValence(idNow) == 2) xPow = valencePowerUinP;
         else xPow = valencePowerDinP;
       }
       do xPart = pow2( Rndm::flat() );
@@ -707,7 +721,7 @@ double BeamParticle::xRemnant( int i) {
     // Find rescaled x value of companion.
     double xLeft = 1.;
     for (int iInit = 0; iInit < nInit; ++iInit) 
-      xLeft -= resolved[iInit].x();
+      if (resolved[iInit].isFromBeam()) xLeft -= resolved[iInit].x();
     double xCompanion = resolved[ resolved[i].companion() ].x();
     xCompanion /= (xLeft + xCompanion);  
 
@@ -747,8 +761,10 @@ void BeamParticle::list(ostream& os) {
        << res.pz() << setw(11) << res.e() << setw(11) << res.m() << "\n";
 
     // Also find and print sum of x and p values. Endline.
-    xSum += res.x();  
-    pSum += res.p();
+    if (res.companion() != -10) {
+      xSum += res.x();  
+      pSum += res.p();
+    }
   }
   os << setprecision(6) << "             x sum:" << setw(10) << xSum 
      << setprecision(3) << "                      p sum:" << setw(11) 

@@ -111,6 +111,13 @@ the <ei>Q^2</ei> or <ei>Q^2</ei> factorization scale at which the
 densities were evaluated.
 </method>
 
+<method name="isValence1(), isValence2()"> 
+<code>true</code> if the two hard incoming partons have been picked 
+to belong to the valence piece of the parton-density distribution, 
+else <code>false</code>. Should be interpreted with caution.
+Information is not set if you switch off parton-level processing. 
+</method>
+
 <method name="alphaS(), alphaEM()"> 
 the <ei>alpha_strong</ei> and <ei>alpha_electromagnetic</ei> values used 
 for the hard process.
@@ -178,6 +185,15 @@ the process code and transverse momentum of the <code>i</code>'th
 subprocess, with <code>i</code> in the range from 0 to
 <code>nMI() - 1</code>. The values for subprocess 0 is redundant with
 information already provided above.  
+</method>
+
+<method name="iAMI(i), iBMI(i)"> 
+are normally zero. However, if the <code>i</code>'th subprocess is
+a rescattering, i.e. either or both incoming partons come from the 
+outgoing state of previous scatterings, they give the position in the
+event record of the outgoing-state parton that rescatters. 
+<code>iAMI</code> and <code>iBMI</code> then denote partons coming from 
+the first or second beam, respectively.
 </method>
 
 <method name="nISR(), nFSRinProc(), nFSRinRes()"> 

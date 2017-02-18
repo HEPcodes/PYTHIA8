@@ -3,6 +3,7 @@
 #
 #                  M. Kirsanov 07.04.2006
 #                     Modified 18.11.2006
+#                     26.03.2008 CLHEP dependency removed
 
 SHELL = /bin/sh
 
@@ -32,67 +33,35 @@ main00  main01 main02 main03 main04 main05 main06 main07 main08 main09 main10 \
 	-L../$(LIBDIRARCH) -lpythia8 -llhapdfdummy
 	@ln -fs ../$(BINDIR)/$@.exe $@.exe
 
-# Create an executable linked to HepMC and CLHEP (if all goes well).
+# Create an executable linked to HepMC (if all goes well).
 ifneq (x$(HEPMCLOCATION),x)
- ifeq ($(findstring x2,x$(HEPMCVERSION)),x2)
-   # without pythia6:
-   main31 main32: ../$(LIBDIRARCH)/libpythia8.a ../$(LIBDIRARCH)/libhepmcinterface.a
-	 @mkdir -p ../$(BINDIR)
-	 $(CXX) $(CXXFLAGS) -I../$(INCDIR) -I$(HEPMCLOCATION)/include \
-	 $@.cc -o ../$(BINDIR)/$@.exe \
-	 -L../$(LIBDIRARCH) -lpythia8 -llhapdfdummy \
-	 -lhepmcinterface \
-	 -L$(HEPMCLOCATION)/lib -lHepMC
-	 @ln -fs ../$(BINDIR)/$@.exe $@.exe
-   # with pythia6:
-   main54: ../$(LIBDIRARCH)/libpythia8.a ../$(LIBDIRARCH)/libhepmcinterface.a
-	 @mkdir -p ../$(BINDIR)
-	 $(CXX) $(CXXFLAGS) -I../$(INCDIR) -I$(HEPMCLOCATION)/include \
-	 $@.cc -o ../$(BINDIR)/$@.exe \
-	 -L../$(LIBDIRARCH) -lpythia8 -llhapdfdummy \
-	 -L$(PYTHIA6LOCATION) $(PYTHIA6LIBNAME) \
-	 -lhepmcinterface \
-	 -L$(HEPMCLOCATION)/lib -lHepMC \
-	 $(FLIBS)
-	 @ln -fs ../$(BINDIR)/$@.exe $@.exe
- else
-  ifneq (x$(CLHEPLOCATION),x)
-   # without pythia6:
-   main31 main32: ../$(LIBDIRARCH)/libpythia8.a ../$(LIBDIRARCH)/libhepmcinterface.a
-	 @mkdir -p ../$(BINDIR)
-	 $(CXX) $(CXXFLAGS) -I../$(INCDIR) -I$(HEPMCLOCATION)/include \
-	 -I$(CLHEPLOCATION)/include $@.cc -o ../$(BINDIR)/$@.exe \
-	 -L../$(LIBDIRARCH) -lpythia8 -llhapdfdummy \
-	 -lhepmcinterface \
-	 -L$(HEPMCLOCATION)/lib -lHepMC \
-	 -L$(CLHEPLOCATION)/lib -lCLHEP
-	 @ln -fs ../$(BINDIR)/$@.exe $@.exe
-   # with pythia6:
-   main54: ../$(LIBDIRARCH)/libpythia8.a ../$(LIBDIRARCH)/libhepmcinterface.a
-	 @mkdir -p ../$(BINDIR)
-	 $(CXX) $(CXXFLAGS) -I../$(INCDIR) -I$(HEPMCLOCATION)/include \
-	 -I$(CLHEPLOCATION)/include $@.cc -o ../$(BINDIR)/$@.exe \
-	 -L../$(LIBDIRARCH) -lpythia8 -llhapdfdummy \
-	 -L$(PYTHIA6LOCATION) $(PYTHIA6LIBNAME) \
-	 -lhepmcinterface \
-	 -L$(HEPMCLOCATION)/lib -lHepMC \
-	 -L$(CLHEPLOCATION)/lib -lCLHEP \
-	 $(FLIBS)
-	 @ln -fs ../$(BINDIR)/$@.exe $@.exe
-  else
-   main31 main32 main54:
-	@echo ERROR, apart from HepMC this target needs CLHEP, \
-	variable CLHEPLOCATION
-  endif
- endif
+  # without pythia6:
+  main31 main32: ../$(LIBDIRARCH)/libpythia8.a ../$(LIBDIRARCH)/libhepmcinterface.a
+	@mkdir -p ../$(BINDIR)
+	$(CXX) $(CXXFLAGS) -I../$(INCDIR) -I$(HEPMCLOCATION)/include \
+	$@.cc -o ../$(BINDIR)/$@.exe \
+	-L../$(LIBDIRARCH) -lpythia8 -llhapdfdummy \
+	-lhepmcinterface \
+	-L$(HEPMCLOCATION)/lib -lHepMC
+	@ln -fs ../$(BINDIR)/$@.exe $@.exe
+  # with pythia6:
+  main54: ../$(LIBDIRARCH)/libpythia8.a ../$(LIBDIRARCH)/libhepmcinterface.a
+	@mkdir -p ../$(BINDIR)
+	$(CXX) $(CXXFLAGS) -I../$(INCDIR) -I$(HEPMCLOCATION)/include \
+	$@.cc -o ../$(BINDIR)/$@.exe \
+	-L../$(LIBDIRARCH) -lpythia8 -llhapdfdummy \
+	-L$(PYTHIA6LOCATION) $(PYTHIA6LIBNAME) \
+	-lhepmcinterface \
+	-L$(HEPMCLOCATION)/lib -lHepMC \
+	$(FLIBS)
+	@ln -fs ../$(BINDIR)/$@.exe $@.exe
 else
- main31 main32 main54:
+  main31 main32 main54:
 	@echo ERROR, this target needs HepMC, variable HEPMCLOCATION
 endif
 
 # Create an executable that links to LHAPDF
-main41 main42: \
-    ../$(LIBDIRARCH)/libpythia8.a
+main41 main42: ../$(LIBDIRARCH)/libpythia8.a
 	@mkdir -p ../$(BINDIR)
 	$(CXX) $(CXXFLAGS) -I../$(INCDIR) $@.cc -o ../$(BINDIR)/$@.exe \
 	-L../$(LIBDIRARCH) -lpythia8 \
@@ -101,8 +70,7 @@ main41 main42: \
 	@ln -fs ../$(BINDIR)/$@.exe $@.exe
 
 # Create an executable that links to Pythia6 
-main51 main52: \
-	../$(LIBDIRARCH)/libpythia8.a
+main51 main52: ../$(LIBDIRARCH)/libpythia8.a
 	@mkdir -p ../$(BINDIR)
 	$(CXX) $(CXXFLAGS) -I../$(INCDIR) $@.cc -o ../$(BINDIR)/$@.exe \
 	-L../$(LIBDIRARCH) -lpythia8 -llhapdfdummy \
@@ -116,6 +84,25 @@ main53: ../$(LIBDIRARCH)/libpythia8.a
 	$(FC) $(FFLAGS) $@.f -o ../$(BINDIR)/$@.exe \
 	-L$(PYTHIA6LOCATION) $(PYTHIA6LIBNAME) $(FLIBS)
 	@ln -fs ../$(BINDIR)/$@.exe $@.exe
+
+# Create an executable that links to Fastjet
+ifneq (x$(FASTJETLOCATION),x)
+  main61 main62: ../$(LIBDIRARCH)/libpythia8.a
+	@mkdir -p ../$(BINDIR)
+    # Note: $(CXXFLAGS) is after Fastjet flags as Fastjet includes
+    #       optimisation/debug flags which may be unwanted (e.g. -g -O2)
+	$(CXX) -I../$(INCDIR) -c $@.cc -o $@.o \
+	`$(FASTJETLOCATION)/bin/fastjet-config --cxxflags --plugins` \
+    $(CXXFLAGS)
+	$(CXX) $(CXXFLAGS) -I../$(INCDIR) $@.cc -o ../$(BINDIR)/$@.exe \
+	-L../$(LIBDIRARCH) -lpythia8 -llhapdfdummy \
+	`$(FASTJETLOCATION)/bin/fastjet-config --libs --plugins`
+	@ln -fs ../$(BINDIR)/$@.exe $@.exe
+	@rm -f $@.o
+else
+  main61 main62:
+	@echo ERROR, this target needs Fastjet, variable FASTJETLOCATION
+endif
 
 # Clean up: remove executables and outdated files.
 .PHONY: clean

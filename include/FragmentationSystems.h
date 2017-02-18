@@ -15,6 +15,7 @@
 #include "Basics.h"
 #include "Event.h"
 #include "FragmentationFlavZpT.h"
+#include "Info.h"
 #include "ParticleData.h"
 #include "PythiaStdlib.h"
 #include "Settings.h"
@@ -60,10 +61,10 @@ class ColConfig {
 public:
 
   // Constructor.
-  ColConfig() {}
+  ColConfig() {singlets.resize(0);}
 
   // Initialize and save pointers.
-  void init(StringFlav* flavSelPtrIn);
+  void init(Info* infoPtrIn, StringFlav* flavSelPtrIn);
 
   // Number of colour singlets.
   int size() const {return singlets.size();}
@@ -76,7 +77,7 @@ public:
 
   // Insert a new colour singlet system in ascending mass order. 
   // Calculate its properties. Join nearby partons.
-  void insert( vector<int>& iPartonIn, Event& event); 
+  bool insert( vector<int>& iPartonIn, Event& event); 
 
   // Collect all partons of singlet to be consecutively ordered.
   void collect(int iSub, Event& event); 
@@ -85,6 +86,9 @@ public:
   void list(ostream& os = cout);
 
 private:
+
+  // Pointer to various information on the generation.
+  Info* infoPtr;
 
   // Pointer to class for flavour generation.
   StringFlav* flavSelPtr;
@@ -127,13 +131,13 @@ public:
   void setUp(Vec4 p1, Vec4 p2, bool isMassless = false);
 
   // Construct a four-momentum from (x+, x-, px, py).
-  Vec4 pHad( double xPos, double xNeg, double px, double py) 
-    { return xPos * pPos + xNeg * pNeg + px * eX + py * eY; }
+  Vec4 pHad( double xPosIn, double xNegIn, double pxIn, double pyIn) 
+    { return xPosIn * pPos + xNegIn * pNeg + pxIn * eX + pyIn * eY; }
 
   // Project a four-momentum onto (x+, x-, px, py). Read out projection.
   void project(Vec4 pIn);
-  void project( double px, double py, double pz, double e) 
-    { project( Vec4( px, py, pz, e) ); }
+  void project( double pxIn, double pyIn, double pzIn, double eIn) 
+    { project( Vec4( pxIn, pyIn, pzIn, eIn) ); }
   double xPos() const {return xPosProj;} 
   double xNeg() const {return xNegProj;} 
   double px() const {return pxProj;} 

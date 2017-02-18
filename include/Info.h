@@ -76,6 +76,8 @@ public:
   double pdf2()           const {return pdf2Save;}
   double QFac()           const {return sqrtpos(Q2FacSave);}
   double Q2Fac()          const {return Q2FacSave;}
+  bool   isValence1()     const {return isVal1;}
+  bool   isValence2()     const {return isVal2;}
   double alphaS()         const {return alphaSSave;}
   double alphaEM()        const {return alphaEMSave;}
   double QRen()           const {return sqrtpos(Q2RenSave);}
@@ -116,6 +118,8 @@ public:
   int    nMI()            const {return nMISave;}
   int    codeMI(int i)    const {return codeMISave[i];} 
   double pTMI(int i)      const {return pTMISave[i];} 
+  int    iAMI(int i)      const {return iAMISave[i];} 
+  int    iBMI(int i)      const {return iBMISave[i];} 
 
   // Number of times other steps have been carried out.
   int    nISR()           const {return nISRSave;}
@@ -147,7 +151,7 @@ private:
 
   // Store current-event quantities.
   bool   isRes, isDiffA, isDiffB, isMB, isLH, hasSubSave, bIsSet, evolIsSet,
-         atEOF;  
+         atEOF, isVal1, isVal2;  
   int    codeSave, codeSubSave, nFinalSave, nFinalSubSave, nTotal, 
          id1Save, id2Save, nMISave, nISRSave, nFSRinProcSave, nFSRinResSave;
   double x1Save, x2Save, pdf1Save, pdf2Save, Q2FacSave, alphaEMSave, 
@@ -155,7 +159,7 @@ private:
          weightSave, bMISave, enhanceMISave, pTmaxMISave, pTmaxISRSave, 
          pTmaxFSRSave;
   string nameSave, nameSubSave;
-  vector<int>    codeMISave;
+  vector<int>    codeMISave, iAMISave, iBMISave;
   vector<double> pTMISave;
 
   // Friend classes allowed to set info.
@@ -174,12 +178,13 @@ private:
 
   // Reset info for current event: only from Pythia class.
   void clear() { isRes = isDiffA = isDiffB = isMB = isLH = atEOF = bIsSet 
-    = false; codeSave = nFinalSave = nTotal = id1Save = id2Save = nMISave 
-    = nISRSave = nFSRinProcSave = nFSRinResSave = 0; x1Save = x2Save 
-    = pdf1Save = pdf2Save = Q2FacSave = alphaEMSave = alphaSSave = Q2RenSave 
-    = sH = tH = uH = pTH = m3H = m4H = thetaH = phiH = 0.; nameSave = " "; 
-    weightSave = bMISave = enhanceMISave = 1.; codeMISave.resize(0); 
-    pTMISave.resize(0);}
+    = isVal1 =isVal2 = false; codeSave = nFinalSave = nTotal = id1Save 
+    = id2Save = nMISave = nISRSave = nFSRinProcSave = nFSRinResSave = 0; 
+    x1Save = x2Save = pdf1Save = pdf2Save = Q2FacSave = alphaEMSave 
+    = alphaSSave = Q2RenSave = sH = tH = uH = pTH = m3H = m4H = thetaH 
+    = phiH = 0.; nameSave = " "; weightSave = bMISave = enhanceMISave = 1.; 
+    codeMISave.resize(0); pTMISave.resize(0); iAMISave.resize(0);
+    iBMISave.resize(0); }
 
   // Set info on the (sub)process: from ProcessLevel, ProcessContainer or 
   // MultipleInteractions classes.
@@ -204,19 +209,26 @@ private:
     double thetaHatIn, double phiHatIn) {x1Save = x1In; x2Save = x2In; 
     sH = sHatIn; tH = tHatIn; uH = uHatIn; pTH = pTHatIn; m3H = m3HatIn; 
     m4H = m4HatIn; thetaH = thetaHatIn; phiH = phiHatIn;}
-  void setTypeMI( int codeMIIn, double pTMIIn) {
-    codeMISave.push_back(codeMIIn); pTMISave.push_back(pTMIIn);}
+  void setTypeMI( int codeMIIn, double pTMIIn, int iAMIIn = 0, int iBMIIn = 0) {
+    codeMISave.push_back(codeMIIn); pTMISave.push_back(pTMIIn);
+    iAMISave.push_back(iAMIIn); iBMISave.push_back(iBMIIn);}
 
   // Set info on cross section: from ProcessLevel.
   void setSigma( long nTryIn, long nSelIn, long nAccIn, double sigGenIn, 
     double sigErrIn) { nTry = nTryIn; nSel = nSelIn; nAcc = nAccIn; 
     sigGen = sigGenIn; sigErr = sigErrIn;} 
 
+  // Set info on valence character of hard collision partons: from PartonLevel.
+  void setValence( bool isVal1In, bool isVal2In) {isVal1 = isVal1In; 
+    isVal2 = isVal2In;}
+
   // Set info on impact parameter: from PartonLevel.
   void setImpact( double bMIIn, double enhanceMIIn) {bMISave = bMIIn;
     enhanceMISave = enhanceMIIn, bIsSet = true;} 
 
   // Set info on pTmax scales and number of evolution steps: from PartonLevel.
+  void setPartEvolved( int nMIIn, int nISRIn) {
+    nMISave = nMIIn; nISRSave = nISRIn;} 
   void setEvolution( double pTmaxMIIn, double pTmaxISRIn, double pTmaxFSRIn, 
     int nMIIn, int nISRIn, int nFSRinProcIn, int nFSRinResIn) { 
     pTmaxMISave = pTmaxMIIn; pTmaxISRSave = pTmaxISRIn; 
