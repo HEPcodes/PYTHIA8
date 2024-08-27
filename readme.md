@@ -1,6 +1,9 @@
 [PYTHIA 8](http://home.thep.lu.se/~torbjorn/Pythia.html)
 =========
 
+**This repository is no longer maintained, as [the official GitLab repository](https://gitlab.com/Pythia8/) is now provided and the history can be traced there.**
+
+
 ### Authors
 
    Torbjörn Sjöstrand et al. (see [the official website](http://home.thep.lu.se/~torbjorn/Pythia.html))
